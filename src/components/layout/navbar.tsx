@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { ModeToggle } from './mode-toggle'
+import { UserNav } from './user-nav'
 
 export function Navbar() {
   return (
@@ -17,12 +17,7 @@ export function Navbar() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
           </div>
           <nav className="flex items-center space-x-2">
-            <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Get Started</Button>
-            </Link>
+            <UserNav />
             <ModeToggle />
           </nav>
         </div>

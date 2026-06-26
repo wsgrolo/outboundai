@@ -153,8 +153,8 @@ create index if not exists usage_logs_user_id_idx on public.usage_logs (user_id)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.users (id, email, name)
-  values (new.id, new.email, new.raw_user_meta_data->>'name');
+  insert into public.users (id, email, name, credits_remaining, subscription_tier)
+  values (new.id, new.email, new.raw_user_meta_data->>'name', 50, 'free_trial');
   return new;
 end;
 $$ language plpgsql security definer;
