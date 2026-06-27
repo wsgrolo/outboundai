@@ -14,10 +14,10 @@ export interface Database {
           id: string
           email: string
           name: string | null
-          company: string | null
+          company_name: string | null
           credits_remaining: number
           stripe_customer_id: string | null
-          subscription_tier: string
+          subscription_tier: string | null
           trial_end: string | null
           created_at: string
           updated_at: string
@@ -26,10 +26,10 @@ export interface Database {
           id: string
           email: string
           name?: string | null
-          company?: string | null
+          company_name?: string | null
           credits_remaining?: number
           stripe_customer_id?: string | null
-          subscription_tier?: string
+          subscription_tier?: string | null
           trial_end?: string | null
           created_at?: string
           updated_at?: string
@@ -38,10 +38,10 @@ export interface Database {
           id?: string
           email?: string
           name?: string | null
-          company?: string | null
+          company_name?: string | null
           credits_remaining?: number
           stripe_customer_id?: string | null
-          subscription_tier?: string
+          subscription_tier?: string | null
           trial_end?: string | null
           created_at?: string
           updated_at?: string
@@ -52,7 +52,7 @@ export interface Database {
           id: string
           user_id: string
           name: string
-          status: string
+          status: 'draft' | 'active' | 'paused' | 'completed'
           created_at: string
           updated_at: string
         }
@@ -60,7 +60,7 @@ export interface Database {
           id?: string
           user_id: string
           name: string
-          status?: string
+          status?: 'draft' | 'active' | 'paused' | 'completed'
           created_at?: string
           updated_at?: string
         }
@@ -68,7 +68,7 @@ export interface Database {
           id?: string
           user_id?: string
           name?: string
-          status?: string
+          status?: 'draft' | 'active' | 'paused' | 'completed'
           created_at?: string
           updated_at?: string
         }
@@ -76,37 +76,40 @@ export interface Database {
       prospects: {
         Row: {
           id: string
-          campaign_id: string
+          campaign_id: string | null
           user_id: string
           linkedin_url: string | null
-          company_name: string | null
-          role: string | null
+          company_name: string
+          prospect_name: string | null
+          job_title: string | null
           research_data: Json | null
-          status: string
+          status: 'pending' | 'researched' | 'generated' | 'sent'
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          campaign_id: string
+          campaign_id?: string | null
           user_id: string
           linkedin_url?: string | null
-          company_name?: string | null
-          role?: string | null
+          company_name: string
+          prospect_name?: string | null
+          job_title?: string | null
           research_data?: Json | null
-          status?: string
+          status?: 'pending' | 'researched' | 'generated' | 'sent'
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          campaign_id?: string
+          campaign_id?: string | null
           user_id?: string
           linkedin_url?: string | null
-          company_name?: string | null
-          role?: string | null
+          company_name?: string
+          prospect_name?: string | null
+          job_title?: string | null
           research_data?: Json | null
-          status?: string
+          status?: 'pending' | 'researched' | 'generated' | 'sent'
           created_at?: string
           updated_at?: string
         }
@@ -116,11 +119,12 @@ export interface Database {
           id: string
           prospect_id: string
           user_id: string
-          subject: string | null
-          body: string | null
-          variant: string | null
-          type: string | null
-          status: string
+          campaign_id: string | null
+          subject: string
+          body: string
+          variant_type: 'cold_intro' | 'value_prop' | 'connection'
+          ab_test_group: string | null
+          status: 'draft' | 'sent' | 'opened' | 'replied'
           sent_at: string | null
           created_at: string
           updated_at: string
@@ -129,11 +133,12 @@ export interface Database {
           id?: string
           prospect_id: string
           user_id: string
-          subject?: string | null
-          body?: string | null
-          variant?: string | null
-          type?: string | null
-          status?: string
+          campaign_id?: string | null
+          subject: string
+          body: string
+          variant_type: 'cold_intro' | 'value_prop' | 'connection'
+          ab_test_group?: string | null
+          status?: 'draft' | 'sent' | 'opened' | 'replied'
           sent_at?: string | null
           created_at?: string
           updated_at?: string
@@ -142,14 +147,73 @@ export interface Database {
           id?: string
           prospect_id?: string
           user_id?: string
-          subject?: string | null
-          body?: string | null
-          variant?: string | null
-          type?: string | null
-          status?: string
+          campaign_id?: string | null
+          subject?: string
+          body?: string
+          variant_type?: 'cold_intro' | 'value_prop' | 'connection'
+          ab_test_group?: string | null
+          status?: 'draft' | 'sent' | 'opened' | 'replied'
           sent_at?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          stripe_subscription_id: string
+          tier: 'starter' | 'pro' | 'agency'
+          status: 'active' | 'canceled' | 'past_due' | 'trialing'
+          current_period_start: string
+          current_period_end: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          stripe_subscription_id: string
+          tier: 'starter' | 'pro' | 'agency'
+          status: 'active' | 'canceled' | 'past_due' | 'trialing'
+          current_period_start: string
+          current_period_end: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          stripe_subscription_id?: string
+          tier?: 'starter' | 'pro' | 'agency'
+          status?: 'active' | 'canceled' | 'past_due' | 'trialing'
+          current_period_start?: string
+          current_period_end?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      usage_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: 'research' | 'generate' | 'subject'
+          credits_consumed: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: 'research' | 'generate' | 'subject'
+          credits_consumed: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: 'research' | 'generate' | 'subject'
+          credits_consumed?: number
+          created_at?: string
         }
       }
     }
