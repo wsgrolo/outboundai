@@ -9,31 +9,31 @@ export type UsageLog = Database['public']['Tables']['usage_logs']['Row']
 export type Subscription = Database['public']['Tables']['subscriptions']['Row']
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('email', email)
-    .single()
+    .maybeSingle()
 
   if (error) return null
   return data
 }
 
 export const getUserById = async (id: string): Promise<User | null> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
   if (error) return null
   return data
 }
 
 export const updateUser = async (id: string, updates: Database['public']['Tables']['users']['Update']): Promise<User> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('users')
     .update(updates)
@@ -46,7 +46,7 @@ export const updateUser = async (id: string, updates: Database['public']['Tables
 }
 
 export const getCampaignsByUser = async (user_id: string): Promise<Campaign[]> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('campaigns')
     .select('*')
@@ -58,7 +58,7 @@ export const getCampaignsByUser = async (user_id: string): Promise<Campaign[]> =
 }
 
 export const createCampaign = async (user_id: string, name: string): Promise<Campaign> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('campaigns')
     .insert({ user_id, name, status: 'draft' })
@@ -70,7 +70,7 @@ export const createCampaign = async (user_id: string, name: string): Promise<Cam
 }
 
 export const deductCredits = async (user_id: string, amount: number): Promise<void> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { error } = await supabase.rpc('deduct_credits', {
     p_user_id: user_id,
     p_amount: amount
@@ -80,7 +80,7 @@ export const deductCredits = async (user_id: string, amount: number): Promise<vo
 }
 
 export const createProspect = async (prospect: Database['public']['Tables']['prospects']['Insert']): Promise<Prospect> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('prospects')
     .insert(prospect)
@@ -92,7 +92,7 @@ export const createProspect = async (prospect: Database['public']['Tables']['pro
 }
 
 export const getProspectsByCampaign = async (campaign_id: string): Promise<Prospect[]> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('prospects')
     .select('*')
@@ -104,7 +104,7 @@ export const getProspectsByCampaign = async (campaign_id: string): Promise<Prosp
 }
 
 export const createGeneratedEmail = async (email: Database['public']['Tables']['generated_emails']['Insert']): Promise<GeneratedEmail> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('generated_emails')
     .insert(email)
@@ -116,7 +116,7 @@ export const createGeneratedEmail = async (email: Database['public']['Tables']['
 }
 
 export const getGeneratedEmailsByProspect = async (prospect_id: string): Promise<GeneratedEmail[]> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('generated_emails')
     .select('*')
@@ -128,7 +128,7 @@ export const getGeneratedEmailsByProspect = async (prospect_id: string): Promise
 }
 
 export const updateGeneratedEmail = async (id: string, updates: Database['public']['Tables']['generated_emails']['Update']): Promise<GeneratedEmail> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('generated_emails')
     .update(updates)
@@ -141,7 +141,7 @@ export const updateGeneratedEmail = async (id: string, updates: Database['public
 }
 
 export const getUserUsageLogs = async (user_id: string): Promise<UsageLog[]> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('usage_logs')
     .select('*')
@@ -153,12 +153,15 @@ export const getUserUsageLogs = async (user_id: string): Promise<UsageLog[]> => 
 }
 
 export const getSubscriptionByUser = async (user_id: string): Promise<Subscription | null> => {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', user_id)
-    .single()
+    .in('status', ['active', 'trialing'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (error) return null
   return data

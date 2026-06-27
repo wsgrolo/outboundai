@@ -91,7 +91,7 @@ create policy "Users can view their own profile" on public.users
   for select using (auth.uid() = id);
 
 create policy "Users can update their own profile" on public.users
-  for update using (auth.uid() = id);
+  for update using (auth.uid() = id) with check (auth.uid() = id);
 
 -- Policies for public.campaigns
 create policy "Users can view their own campaigns" on public.campaigns
@@ -140,6 +140,9 @@ create policy "Users can view their own subscriptions" on public.subscriptions
 create policy "Users can view their own usage logs" on public.usage_logs
   for select using (auth.uid() = user_id);
 
+create policy "Users can create their own usage logs" on public.usage_logs
+  for insert with check (auth.uid() = user_id);
+
 -- Create indexes for foreign keys and common query fields
 create index if not exists campaigns_user_id_idx on public.campaigns (user_id);
 create index if not exists prospects_campaign_id_idx on public.prospects (campaign_id);
@@ -169,6 +172,10 @@ returns void as $$
 begin
   update public.users
   set credits_remaining = credits_remaining - p_amount
-  where id = p_user_id;
+  where id = p_user_id and credits_remaining >= p_amount;
+  
+  if not found then
+    raise exception 'Insufficient credits';
+  end if;
 end;
 $$ language plpgsql security definer;
