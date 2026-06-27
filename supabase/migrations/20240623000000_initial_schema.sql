@@ -1,72 +1,79 @@
+-- OutboundAI Initial Schema
+-- Ratified: 2026-06-23
+
 -- Create a table for public user profiles
-create table public.users (
+create table if not exists public.users (
   id uuid references auth.users on delete cascade not null primary key,
   email text unique not null,
   name text,
-  company text,
-  credits_remaining integer default 50 not null,
+  company_name text,
+  credits_remaining integer default 0 not null,
   stripe_customer_id text,
-  subscription_tier text default 'free' not null,
+  subscription_tier text, -- starter/pro/agency
   trial_end timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Create a table for campaigns
-create table public.campaigns (
+create table if not exists public.campaigns (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.users on delete cascade not null,
   name text not null,
-  status text default 'active' not null,
+  status text default 'draft' not null, -- draft/active/paused/completed
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Create a table for prospects
-create table public.prospects (
+create table if not exists public.prospects (
   id uuid default gen_random_uuid() primary key,
-  campaign_id uuid references public.campaigns on delete cascade not null,
+  campaign_id uuid references public.campaigns on delete cascade,
   user_id uuid references public.users on delete cascade not null,
   linkedin_url text,
-  company_name text,
-  role text,
+  company_name text not null,
+  prospect_name text,
+  job_title text,
   research_data jsonb,
-  status text default 'pending' not null,
+  status text default 'pending' not null, -- pending/researched/generated/sent
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Create a table for generated emails
-create table public.generated_emails (
+create table if not exists public.generated_emails (
   id uuid default gen_random_uuid() primary key,
   prospect_id uuid references public.prospects on delete cascade not null,
   user_id uuid references public.users on delete cascade not null,
-  subject text,
-  body text,
-  variant text,
-  type text,
-  status text default 'draft' not null,
+  campaign_id uuid references public.campaigns on delete cascade,
+  subject text not null,
+  body text not null,
+  variant_type text not null, -- cold_intro/value_prop/connection
+  ab_test_group text,
+  status text default 'draft' not null, -- draft/sent/opened/replied
   sent_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Create a table for subscriptions
-create table public.subscriptions (
+create table if not exists public.subscriptions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.users on delete cascade not null,
-  stripe_subscription_id text unique,
-  tier text not null,
-  status text not null,
-  current_period_end timestamp with time zone,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  stripe_subscription_id text unique not null,
+  tier text not null, -- starter/pro/agency
+  status text not null, -- active/canceled/past_due/trialing
+  current_period_start timestamp with time zone not null,
+  current_period_end timestamp with time zone not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Create a table for usage logs
-create table public.usage_logs (
+create table if not exists public.usage_logs (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.users on delete cascade not null,
-  action text not null,
+  action text not null, -- research/generate/subject
   credits_consumed integer default 0 not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -133,6 +140,15 @@ create policy "Users can view their own subscriptions" on public.subscriptions
 create policy "Users can view their own usage logs" on public.usage_logs
   for select using (auth.uid() = user_id);
 
+-- Create indexes for foreign keys and common query fields
+create index if not exists campaigns_user_id_idx on public.campaigns (user_id);
+create index if not exists prospects_campaign_id_idx on public.prospects (campaign_id);
+create index if not exists prospects_user_id_idx on public.prospects (user_id);
+create index if not exists generated_emails_prospect_id_idx on public.generated_emails (prospect_id);
+create index if not exists generated_emails_user_id_idx on public.generated_emails (user_id);
+create index if not exists subscriptions_user_id_idx on public.subscriptions (user_id);
+create index if not exists usage_logs_user_id_idx on public.usage_logs (user_id);
+
 -- Trigger to create a public.users row on auth.users signup
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -143,18 +159,9 @@ begin
 end;
 $$ language plpgsql security definer;
 
-create trigger on_auth_user_created
+create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
-
--- Create indexes for foreign keys and common query fields
-create index campaigns_user_id_idx on public.campaigns (user_id);
-create index prospects_campaign_id_idx on public.prospects (campaign_id);
-create index prospects_user_id_idx on public.prospects (user_id);
-create index generated_emails_prospect_id_idx on public.generated_emails (prospect_id);
-create index generated_emails_user_id_idx on public.generated_emails (user_id);
-create index subscriptions_user_id_idx on public.subscriptions (user_id);
-create index usage_logs_user_id_idx on public.usage_logs (user_id);
 
 -- Function to deduct credits from a user
 create or replace function public.deduct_credits(p_user_id uuid, p_amount integer)

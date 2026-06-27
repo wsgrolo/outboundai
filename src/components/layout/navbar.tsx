@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ModeToggle } from './mode-toggle'
 
 export function Navbar() {
   return (
@@ -22,6 +23,7 @@ export function Navbar() {
             <Link href="/signup">
               <Button>Get Started</Button>
             </Link>
+            <ModeToggle />
           </nav>
         </div>
       </div>
