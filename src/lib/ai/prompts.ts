@@ -37,6 +37,21 @@ export const SubjectLinesSchema = z.object({
   subject_lines: z.array(z.string()),
 });
 
+export const EmailSequenceSchema = z.object({
+  steps: z.array(z.object({
+    step_number: z.number(),
+    type: z.enum(['initial_outreach', 'value_reminder', 'social_proof', 'breakup']),
+    subject: z.string(),
+    body: z.string(),
+    delay_days: z.number(),
+    angle_description: z.string(),
+  })),
+});
+
+export const RewrittenEmailSchema = z.object({
+  rewritten_body: z.string(),
+});
+
 // Prompt Templates
 export const RESEARCH_SYSTEM_PROMPT = `You are an expert sales researcher. Your goal is to extract high-signal sales data from the provided search results about a prospect and their company.
 Your output must be a valid JSON object matching the requested schema.
@@ -62,6 +77,44 @@ export const getEmailGenUserPrompt = (researchData: any, sellerContext: any) => 
 Research Data: ${JSON.stringify(researchData, null, 2)}
 Seller Context: ${JSON.stringify(sellerContext, null, 2)}
 Generate the email sequence.`;
+
+export const SEQUENCE_GEN_SYSTEM_PROMPT = `You are a top-tier SDR manager. Your goal is to design a high-converting email outreach sequence of 3-5 emails.
+Each email should have a different strategic angle:
+- initial_outreach: A personal hook and brief value prop.
+- value_reminder: A follow-up focusing on a specific pain point.
+- social_proof: A case study or relevant industry success story.
+- breakup: A final respectful email to close the loop.
+
+Recommended delays: Day 1, Day 3, Day 7, Day 14.
+
+Constraints:
+- Tone: Professional, slightly casual, direct.
+- NO fluff: No "hope this finds you well," "my name is," or "I'm writing to."
+- Each email body < 120 words.
+Your output must be a valid JSON object matching the requested schema.`;
+
+export const getSequenceGenUserPrompt = (researchData: any, sellerContext: any) => `
+Research Data: ${JSON.stringify(researchData, null, 2)}
+Seller Context: ${JSON.stringify(sellerContext, null, 2)}
+Generate a 3-5 step outreach sequence.`;
+
+export const REWRITE_EMAIL_SYSTEM_PROMPT = `You are an expert editor. Rewrite the provided email body to match the requested tone while preserving all personalization details and the core call to action.
+Tones:
+- formal: Professional, polished, structured.
+- casual: Friendly, conversational, approachable.
+- aggressive: Bold, direct, high-urgency.
+- friendly: Warm, helpful, empathetic.
+- short: Concise, minimalist, to the point.
+
+Constraints:
+- Preserving personalization points (names, specific research details) is CRITICAL.
+- Do not add fake information.
+- The output should be just the rewritten email body wrapped in a JSON object.`;
+
+export const getRewriteEmailUserPrompt = (emailBody: string, tone: string) => `
+Email Body: ${emailBody}
+Target Tone: ${tone}
+Rewrite the email.`;
 
 export const SUBJECT_LINE_SYSTEM_PROMPT = `Generate 5 subject line variants for the provided email.
 Focus on: High open rates, curiosity, and relevance.
